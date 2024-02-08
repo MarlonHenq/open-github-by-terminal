@@ -1,0 +1,176 @@
+#!/bin/bash
+
+shortcuts_file="/usr/local/bin/shortcuts.txt"
+
+open_github() {
+    google-chrome --kiosk --app="https://github.com/"
+}
+
+open_repository() {
+    if [ -z "$1" ]; then
+        echo "Algum argumento está faltando. Adicione o nome do repositório."
+        return 1
+    fi
+
+    repository_url="https://github.com/$1"
+    google-chrome --kiosk --app="$repository_url"
+}
+
+open_organization() {
+    if [ -z "$1" ]; then
+        echo "Algum argumento está faltando. Adicione o nome da organização."
+        return 1
+    fi
+
+    organization_url="https://github.com/$1"
+    google-chrome --kiosk --app="$organization_url"
+}
+
+
+open_organization_project() {
+    if [ -z "$1" ] || [ -z "$2" ]; then
+        echo "Algum argumento está faltando. Adicione o nome da organização e o nome do projeto."
+        return 1
+    fi
+
+    project_url="https://github.com/$1/$2"
+    google-chrome --kiosk --app="$project_url"
+}
+
+open_organization_repository() {
+    if [ -z "$1" ] || [ -z "$2" ]; then
+        echo "Algum argumento está faltando. Adicione o nome da organização e o nome do repositório."
+        return 1
+    fi
+
+    repository_url="https://github.com/$1/$2"
+    google-chrome --kiosk --app="$repository_url"
+}
+
+save_shortcut() {
+    if [ -z "$1" ] || [ -z "$2" ]; then
+        echo "Algum argumento está faltando. Adicione um alias e um link para o atalho."
+        return 1
+    fi
+
+    echo "$1 $2" >> "$shortcuts_file"
+    if [ $? -ne 0 ]; then
+        echo "Esta ação requer privilégios de superusuário (sudo)."
+        return 1
+    fi
+
+    echo "Atalho '$1' para o link '$2' salvo com sucesso."
+}
+
+open_shortcut() {
+    if [ -z "$1" ]; then
+        echo "Algum argumento está faltando. Adicione um alias do atalho."
+        return 1
+    fi
+
+    shortcut=$(grep "^$1 " "$shortcuts_file" | cut -d' ' -f2)
+    if [ -z "$shortcut" ]; then
+        echo "Atalho '$1' não encontrado."
+        return 1
+    fi
+
+    google-chrome --kiosk --app="$shortcut"
+}
+
+# Autocomplete
+autocomplete_github_script() {
+    local cur prev
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    #echo "Prev: $prev"
+    #echo "$cur"
+    
+    case "$prev" in
+        -r)
+            ;;
+        -o)
+            ;;
+        -op)
+            ;;
+        -or)
+            ;;
+        -s)
+            ;;
+        -a)
+            shortcuts=$(cut -d' ' -f1 "$shortcuts_file")
+            COMPREPLY=( $(compgen -W "${shortcuts[*]}" -- "$cur") )
+            ;;
+        *)
+            options="-r -o -op -or -s -a"
+            COMPREPLY=( $(compgen -W "$options" -- "$cur") )
+            ;;
+    esac
+}
+
+
+# Apontando para a função de autocompletar
+complete -o filenames -F autocomplete_github_script github
+
+# Inputs
+case "$1" in
+    -r)
+        shift
+        open_repository "$@"
+        ;;
+    -o)
+        shift
+        open_organization "$@"
+        ;;
+    -op)
+        shift
+        open_organization_project "$@"
+        ;;
+    -or)
+        shift
+        open_organization_repository "$@"
+        ;;
+    -s)
+        shift
+        save_shortcut "$@"
+        ;;
+    -a)
+        shift
+        open_shortcut "$@"
+        ;;
+    *)
+        open_github
+        ;;
+esac
+
+# # Inputs
+# case "$1" in
+#     -r)
+#         shift
+#         open_repository "$@"
+#         ;;
+#     -o)
+#         shift
+#         open_organization "$@"
+#         ;;
+#     -op)
+#         shift
+#         open_organization_project "$@"
+#         ;;
+#     -or)
+#         shift
+#         open_organization_repository "$@"
+#         ;;
+#     -s)
+#         shift
+#         save_shortcut "$@"
+#         ;;
+#     -a)
+#         shift
+#         open_shortcut "$@"
+#         ;;
+#     *)
+#         open_github
+#         ;;
+# esac
